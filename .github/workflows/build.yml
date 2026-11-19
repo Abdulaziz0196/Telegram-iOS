@@ -30,16 +30,6 @@ jobs:
           sudo xcode-select -s "$XCODE_APP/Contents/Developer"
           xcodebuild -version
 
-      - name: Check API credentials
-        env:
-          ABUGRAM_API_ID: ${{ secrets.ABUGRAM_API_ID }}
-          ABUGRAM_API_HASH: ${{ secrets.ABUGRAM_API_HASH }}
-        run: |
-          if [ -z "$ABUGRAM_API_ID" ] || [ -z "$ABUGRAM_API_HASH" ]; then
-            echo "::error::Add ABUGRAM_API_ID and ABUGRAM_API_HASH (from my.telegram.org) in Settings > Secrets and variables > Actions"
-            exit 1
-          fi
-
       - name: Create canonical source directory
         run: |
           set -x
@@ -58,8 +48,11 @@ jobs:
           import json, os
           with open("build-system/appstore-configuration.json") as f:
               config = json.load(f)
-          config["api_id"] = os.environ["ABUGRAM_API_ID"].strip()
-          config["api_hash"] = os.environ["ABUGRAM_API_HASH"].strip()
+          # Optional override from Actions secrets; otherwise the committed Abugram keys are used
+          if os.environ.get("ABUGRAM_API_ID", "").strip():
+              config["api_id"] = os.environ["ABUGRAM_API_ID"].strip()
+          if os.environ.get("ABUGRAM_API_HASH", "").strip():
+              config["api_hash"] = os.environ["ABUGRAM_API_HASH"].strip()
           with open("build-system/abugram-configuration.json", "w") as f:
               json.dump(config, f, indent=4)
           EOF
