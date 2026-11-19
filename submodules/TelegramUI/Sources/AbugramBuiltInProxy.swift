@@ -140,17 +140,15 @@ private final class AbugramProxyProbe {
 
     // Connects to every server at once and reports the first one that accepts a TCP connection.
     func start(servers: [ProxyServerSettings], timeout: Double, completion: @escaping (ProxyServerSettings?) -> Void) {
-        self.queue.async {
+        self.queue.async { [self] in
             self.completion = completion
             for server in servers {
                 guard let port = NWEndpoint.Port(rawValue: UInt16(clamping: server.port)) else {
                     continue
                 }
                 let connection = NWConnection(host: NWEndpoint.Host(server.host), port: port, using: .tcp)
-                connection.stateUpdateHandler = { [weak self] state in
-                    guard let self = self else {
-                        return
-                    }
+                // Strong capture: finish() clears every handler, and the timeout always calls it.
+                connection.stateUpdateHandler = { state in
                     if case .ready = state {
                         self.finish(server)
                     }
