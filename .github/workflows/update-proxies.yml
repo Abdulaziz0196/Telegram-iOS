@@ -1,0 +1,31 @@
+name: Update Abugram proxies
+
+on:
+  schedule:
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Refresh proxy list
+        run: python3 abugram/update_proxies.py
+
+      - name: Commit changes
+        run: |
+          if git diff --quiet -- abugram/proxies.txt; then
+            echo "Proxy list unchanged"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898299+github-actions[bot]@users.noreply.github.com"
+          git add abugram/proxies.txt
+          git commit -m "Update Abugram proxy list [skip ci]"
+          git push

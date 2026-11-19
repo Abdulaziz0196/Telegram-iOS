@@ -1128,6 +1128,13 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
         })
         self.accountManager = accountManager
 
+        // MARK: Abugram - built-in proxy so the app connects without a VPN
+        if !isUITest {
+            abugramStartBuiltInProxy(updateSettings: { f in
+                let _ = updateProxySettingsInteractively(accountManager: accountManager, f).start()
+            })
+        }
+
         telegramUIDeclareEncodables()
         initializeAccountManagement()
 
