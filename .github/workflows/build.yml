@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   build:
-    runs-on: macos-26
+    runs-on: xcode-27
     timeout-minutes: 360
 
     steps:
@@ -28,7 +28,10 @@ jobs:
             XCODE_APP="/Applications/Xcode_$XCODE_VERSION.app"
           else
             echo "Xcode $XCODE_VERSION not found, available:"; ls -d /Applications/Xcode*.app
-            XCODE_APP=$(ls -d /Applications/Xcode_${XCODE_VERSION%%.*}*.app | sort -V | tail -1)
+            XCODE_APP=$(ls -d /Applications/Xcode_${XCODE_VERSION%%.*}*.app 2>/dev/null | sort -V | tail -1 || true)
+          fi
+          if [ -z "$XCODE_APP" ]; then
+            echo "::error::No Xcode ${XCODE_VERSION%%.*}.x on this runner"; exit 1
           fi
           echo "Using $XCODE_APP"
           sudo xcode-select -s "$XCODE_APP/Contents/Developer"
