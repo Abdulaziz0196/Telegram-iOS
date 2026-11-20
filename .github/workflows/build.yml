@@ -94,8 +94,19 @@ jobs:
           OUTPUT_PATH="build/artifacts"
           rm -rf "$OUTPUT_PATH"
           mkdir -p "$OUTPUT_PATH"
-          cp bazel-bin/Telegram/Telegram.ipa "$OUTPUT_PATH/Abugram.ipa"
+          IPA=$(ls bazel-bin/Telegram/*.ipa | head -1)
+          if [ -z "$IPA" ]; then
+            echo "::error::No .ipa in bazel-bin/Telegram"; exit 1
+          fi
+          cp "$IPA" "$OUTPUT_PATH/Abugram.ipa"
           ls -lh "$OUTPUT_PATH"
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Abugram-${{ env.BUILD_NUMBER }}
+          path: /Users/Shared/telegram-ios/build/artifacts/Abugram.ipa
+          if-no-files-found: error
 
       - name: Publish release
         uses: softprops/action-gh-release@v2
