@@ -64,6 +64,14 @@ jobs:
               json.dump(config, f, indent=4)
           EOF
 
+      - name: Restore bazel cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/telegram-bazel-cache
+          key: abugram-bazel-${{ github.run_id }}
+          restore-keys: |
+            abugram-bazel-
+
       - name: Build the App
         run: |
           set -x
@@ -85,6 +93,7 @@ jobs:
           python3 -u build-system/Make/Make.py \
             --overrideXcodeVersion \
             --bazelUserRoot="$BAZEL_USER_ROOT" \
+            --cacheDir="$HOME/telegram-bazel-cache" \
             build \
             --configurationPath="build-system/abugram-configuration.json" \
             --codesigningInformationPath=build-system/fake-codesigning \
@@ -100,6 +109,14 @@ jobs:
           fi
           cp "$IPA" "$OUTPUT_PATH/Abugram.ipa"
           ls -lh "$OUTPUT_PATH"
+
+      - name: Save bazel cache
+        if: always()
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: ~/telegram-bazel-cache
+          key: abugram-bazel-${{ github.run_id }}
 
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
