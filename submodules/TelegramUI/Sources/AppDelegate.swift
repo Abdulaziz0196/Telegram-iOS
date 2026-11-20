@@ -723,7 +723,16 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
             networkEngineFactory: RustNetworkEngineFactory()
         )
         
-        guard let appGroupUrl = maybeAppGroupUrl else {
+        // MARK: Abugram - sideloading tools often re-sign without the app group entitlement, which left a blank
+        // screen here. Fall back to the app's own container: the app works, only extensions lose shared data.
+        let appGroupUrl: URL
+        if let resolvedAppGroupUrl = maybeAppGroupUrl {
+            appGroupUrl = resolvedAppGroupUrl
+        } else if let fallbackUrl = FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask).first?.appendingPathComponent("AbugramAppGroup", isDirectory: true) {
+            let _ = try? FileManager.default.createDirectory(at: fallbackUrl, withIntermediateDirectories: true, attributes: nil)
+            NSLog("[Abugram] App group unavailable; using \(fallbackUrl.path)")
+            appGroupUrl = fallbackUrl
+        } else {
             self.mainWindow?.presentNative(UIAlertController(title: nil, message: "Error 2", preferredStyle: .alert))
             return true
         }
@@ -1127,6 +1136,13 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
             try resetWalletLocalSecrets()
         })
         self.accountManager = accountManager
+
+        // MARK: Abugram - built-in proxy so the app connects without a VPN
+        if !isUITest {
+            abugramStartBuiltInProxy(updateSettings: { f in
+                let _ = updateProxySettingsInteractively(accountManager: accountManager, f).start()
+            })
+        }
 
         telegramUIDeclareEncodables()
         initializeAccountManagement()
