@@ -191,8 +191,10 @@ func abugramStartBuiltInProxy(updateSettings: @escaping (@escaping (ProxySetting
             servers = abugramParseProxyList(abugramFallbackProxyList)
         }
         if servers.isEmpty {
+            abugramLaunchTraceProxy("proxy: no list")
             return
         }
+        abugramLaunchTraceProxy("proxy: probing \(min(servers.count, abugramMaxProbedServers)) of \(servers.count)\(text == nil ? " (built-in list)" : "")")
         let probed = Array(servers.prefix(abugramMaxProbedServers))
         let probe = AbugramProxyProbe()
         DispatchQueue.main.async {
@@ -201,6 +203,7 @@ func abugramStartBuiltInProxy(updateSettings: @escaping (@escaping (ProxySetting
         probe.start(servers: probed, timeout: abugramProbeTimeout, completion: { fastest in
             DispatchQueue.main.async {
                 abugramCurrentProbe = nil
+                abugramLaunchTraceProxy(fastest.flatMap { "proxy: \($0.host):\($0.port)" } ?? "proxy: none reachable")
                 abugramApplyProxies(servers: servers, fastest: fastest, updateSettings: updateSettings)
             }
         })
